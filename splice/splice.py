@@ -2,6 +2,10 @@ import torch
 from typing import Union
 from .model import SPLICE
 import os
+import urllib
+from tqdm import tqdm
+
+GITHUB_HOST_LINK = "https://github.com/AI4LIFE-GROUP/SpLiCE/tree/main/data"
 
 SUPPORTED_MODELS = {
     "clip": [
@@ -23,7 +27,23 @@ def available_models():
     """Returns supported models."""
     return SUPPORTED_MODELS
 
-def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device: Union[str, torch.device] = "cuda" if torch.cuda.is_available() else "cpu", **kwargs):
+def _download(url: str, root: str):
+    os.makedirs(root, exist_ok=True)
+    filename = os.path.basename(url)
+    download_target = os.path.join(root, filename)
+    with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
+        # with tqdm(total=int(source.info().get("Content-Length")), ncols=80, unit='iB', unit_scale=True, unit_divisor=1024) as loop:
+        while True:
+            buffer = source.read(8192)
+            if not buffer:
+                break
+
+            output.write(buffer)
+                # loop.update(len(buffer))
+
+    return download_target
+
+def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device: Union[str, torch.device] = "cuda" if torch.cuda.is_available() else "cpu", download_root: str = None, **kwargs):
     """load SpLiCE
 
     Parameters
@@ -34,6 +54,8 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device: Union
         the vocabulary set used for dictionary learning
     device : Union[str, torch.device], optional
         torch device
+    download_root : str
+        path to download vocabulary and mean data to, otherwise "~/.cache/splice"
     """
     if ":" not in name:
         raise RuntimeError("Please define your CLIP backbone with the syntax \'[library]:[model]\'")
@@ -62,7 +84,9 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device: Union
         concepts = []
         vocab = []
 
-        with open(os.path.join(dirname, f"../data/vocab/{vocabulary}.txt")) as f:
+        vocab_path = _download(os.path.join(GITHUB_HOST_LINK, "vocab", vocabulary + ".txt"), os.path.join(download_root, "vocab") or os.path.expanduser("~/.cache/splice/vocab"))
+
+        with open(vocab_path, "r") as f:
             lines = f.readlines()
             for line in lines[:vocabulary_size]:
                 line = line.split(", ")[0].strip()
@@ -77,9 +101,10 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device: Union
     else:
         raise RuntimeError(f"Vocabulary {vocabulary} not supported.")
     
+    
     model_path = model_name.replace("/","-")
-    image_mean = torch.load(os.path.join(dirname, f"../data/weights/{library}_{model_path}_image.pt"))
-    # image_mean = torch.load(f"../data/weights/{library}_{model_name}_image.pt")
+    mean_path = _download(os.path.join(GITHUB_HOST_LINK, "means", f"{library}_{model_path}_image.pt"), os.path.join(download_root, "means") or os.path.expanduser("~/.cache/splice/means"))
+    image_mean = torch.load(mean_path)
     
     splice = SPLICE(
         image_mean=image_mean,
