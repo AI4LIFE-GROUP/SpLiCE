@@ -1,3 +1,6 @@
+import sys
+sys.path.append("../..") ##FIXME delete later
+
 import torch
 from torchvision.datasets import CIFAR100
 from torch.utils.data import DataLoader
@@ -33,13 +36,12 @@ def find_closest(embedding, label_embeddings):
 def compute_zero_shot(clipmodel, tokenizer, preprocess, dataset="CIFAR100"):
     dataset_test = CIFAR100("/n/holylabs/LABS/hlakkaraju_lab/Lab/datasets/", download=True, train=False, transform=preprocess)
 
-    test_dataloader = DataLoader(dataset_test, batch_size=8192, shuffle=False)
+    test_dataloader = DataLoader(dataset_test, batch_size=1024, shuffle=False)
 
     label_embeddings = []
 
     idx_to_class = dict((v,k) for k,v in dataset_test.class_to_idx.items())    
     for key in idx_to_class:
-        print(idx_to_class[key])
         label_embeddings.append(clipmodel.encode_text(tokenizer("A photo of a {}".format(idx_to_class[key])).to(device)))
     
     label_embeddings = torch.stack(label_embeddings).squeeze()
@@ -56,7 +58,7 @@ def main():
     # zero_shot_acc = compute_zero_shot(clipmodel, tokenizer, preprocess, dataset="Tiny-Imagenet")
     # print("Zero shot accuracy with base CLIP: {}".format(zero_shot_acc))
     
-    splicemodel = splice.load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, device="cuda")
+    splicemodel = splice.load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.15, device="cuda")
     tokenizer = splice.get_tokenizer("open_clip:ViT-B-32")
     preprocess = splice.get_preprocess("open_clip:ViT-B-32")
     zero_shot_acc = compute_zero_shot(splicemodel, tokenizer, preprocess, dataset="CIFAR100")

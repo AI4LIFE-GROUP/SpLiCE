@@ -5,7 +5,7 @@ import os
 import urllib
 from tqdm import tqdm
 
-GITHUB_HOST_LINK = "https://github.com/AI4LIFE-GROUP/SpLiCE/tree/main/data"
+GITHUB_HOST_LINK = "https://raw.githubusercontent.com/AI4LIFE-GROUP/SpLiCE/main/data/"
 
 SUPPORTED_MODELS = {
     "clip": [
@@ -27,10 +27,11 @@ def available_models():
     """Returns supported models."""
     return SUPPORTED_MODELS
 
-def _download(url: str, root: str):
-    os.makedirs(root, exist_ok=True)
+def _download(url: str, root: str, subfolder: str):
+    root_subfolder = os.path.join(root, subfolder)
+    os.makedirs(root_subfolder, exist_ok=True)
     filename = os.path.basename(url)
-    download_target = os.path.join(root, filename)
+    download_target = os.path.join(root_subfolder, filename)
     with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
         # with tqdm(total=int(source.info().get("Content-Length")), ncols=80, unit='iB', unit_scale=True, unit_divisor=1024) as loop:
         while True:
@@ -69,7 +70,7 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device: Union
                 tokenizer = clip.tokenize
             elif library == "open_clip":
                 import open_clip
-                clip_backbone = open_clip.create_model(model_name, device=device) ##FIXME maybe allow specifying pretrained? probs not though
+                clip_backbone = open_clip.create_model(model_name, device=device, pretrained='laion2b_s34b_b79k') ##FIXME maybe allow specifying pretrained? probs not though
                 tokenizer = open_clip.get_tokenizer(model_name)
             else:
                 raise RuntimeError("Only CLIP and Open CLIP supported at this time. Try manual construction instead.")
@@ -78,18 +79,16 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device: Union
     else:
         raise RuntimeError(f"Library {name} not supported. Try manual construction instead.")
     
-    dirname = os.path.dirname(__file__)
-
     if vocabulary in SUPPORTED_VOCAB:
         concepts = []
         vocab = []
 
-        vocab_path = _download(os.path.join(GITHUB_HOST_LINK, "vocab", vocabulary + ".txt"), os.path.join(download_root, "vocab") or os.path.expanduser("~/.cache/splice/vocab"))
+        vocab_path = _download(os.path.join(GITHUB_HOST_LINK, "vocab", vocabulary + ".txt"), download_root or os.path.expanduser("~/.cache/splice/"), "vocab")
 
         with open(vocab_path, "r") as f:
-            lines = f.readlines()
-            for line in lines[:vocabulary_size]:
-                line = line.split(", ")[0].strip()
+            lines = f.readlines()[-vocabulary_size:]
+            for line in lines:
+                line = line.strip().split(", ")[0]
                 vocab.append(line)
                 tokens = tokenizer(line).to(device)
                 with torch.no_grad():
@@ -103,13 +102,14 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device: Union
     
     
     model_path = model_name.replace("/","-")
-    mean_path = _download(os.path.join(GITHUB_HOST_LINK, "means", f"{library}_{model_path}_image.pt"), os.path.join(download_root, "means") or os.path.expanduser("~/.cache/splice/means"))
+    mean_path = _download(os.path.join(GITHUB_HOST_LINK, "means", f"{library}_{model_path}_image.pt"), download_root or os.path.expanduser("~/.cache/splice/"), "means")
     image_mean = torch.load(mean_path)
-    
+
     splice = SPLICE(
         image_mean=image_mean,
         dictionary=concepts,
         clip=clip_backbone,
+        device=device,
         **kwargs
     )
 
