@@ -3,7 +3,7 @@ from .model import SPLICE
 import os
 import urllib
 
-GITHUB_HOST_LINK = "https://raw.githubusercontent.com/alex-oesterling/temp/main/data/"
+GITHUB_HOST_LINK = "https://github.com/AI4LIFE-GROUP/SpLiCE"
 
 SUPPORTED_MODELS = {
     "clip": [
@@ -237,8 +237,12 @@ def decompose_dataset(dataloader, splicemodel=None, device="cpu"):
         splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.15, return_weights=True,device=device)
     splicemodel.eval()
 
-    weights = None
+    splicemodel.return_weights = True
+    splicemodel.return_cosine = True
+
+    ret_weights = None
     l0 = 0
+    cosine = 0
     total = 0
 
     for data in dataloader:
@@ -249,16 +253,18 @@ def decompose_dataset(dataloader, splicemodel=None, device="cpu"):
         image = image.to(device)
 
         with torch.no_grad():
-            embedding = splicemodel.encode_image(image)
-            if weights is None:
-                weights = torch.sum(embedding, dim=0)
-            else:
-                weights += torch.sum(embedding, dim=0)
-            total += image.shape[0]
 
-            l0 += torch.linalg.vector_norm(embedding, dim=1, ord=0).sum().item()
+            (batch_weights, batch_cosine) = splicemodel.encode_image(image)
+            if ret_weights is None:
+                ret_weights = torch.sum(batch_weights, dim=0)
+            else:
+                ret_weights += torch.sum(batch_weights, dim=0)
+            
+            l0 += torch.linalg.vector_norm(batch_weights, dim=1, ord=0).sum().item()
+            cosine += batch_cosine.item()
+            total += image.shape[0]
         
-    return weights/total, l0/total
+    return ret_weights/total, l0/total, cosine/total
 
 def decompose_classes(dataloader, target_label, splicemodel=None, device="cpu"):
     """decompose_dataset decomposes a full dataset and returns the mean weights of the sparse decomposition per class.
@@ -281,46 +287,58 @@ def decompose_classes(dataloader, target_label, splicemodel=None, device="cpu"):
         A dictionary of elements {label : mean sparse weight vector}
     """
     if splicemodel is None:
-        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.15, return_weights=True,device=device)
+        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.15, return_weights=True, return_cosine=True, device=device)
     splicemodel.eval()
 
-    class_labels={}
+    class_weights={}
     class_totals={}
 
+    splicemodel.return_weights = True
+    splicemodel.return_cosine = True
+
     l0 = 0
+    cosine = 0
     total = 0
 
     for idx, (image, label) in enumerate(dataloader):
 
         if target_label != None:
             idx = torch.argwhere(label == target_label).squeeze()
-            if len(idx) == 0:
+            if idx.nelement() == 0:
                 continue
 
             image = image[idx]
             label = label[idx]
 
+            if idx.nelement() == 1:
+                image, label = image.unsqueeze(0), label.unsqueeze(0)
+            
+            
+
         with torch.no_grad():
             image = image.to(device)
             label = label.to(device)
 
-            embedding = splicemodel.encode_image(image)
+            (weights, batch_cosine) = splicemodel.encode_image(image)
+
             for i in range(image.shape[0]):
-                embedding_i, label_i = embedding[i], label[i].item()
-                if label_i in class_labels:
-                    class_labels[label_i] += embedding_i
+                weights_i, label_i = weights[i], label[i].item()
+                if label_i in class_weights:
+                    class_weights[label_i] += weights_i
                     class_totals[label_i] += 1
                 else:
-                    class_labels[label_i] = embedding_i
+                    class_weights[label_i] = weights_i
                     class_totals[label_i] = 1
 
-            l0 += torch.linalg.vector_norm(embedding, dim=1, ord=0).sum().item()
+            l0 += torch.linalg.vector_norm(weights, dim=1, ord=0).sum().item()
+            cosine += batch_cosine.item()
             total += image.shape[0]
     
-    for label in class_labels.keys():
-        class_labels[label] /= class_totals[label]
+    for label in class_weights.keys():
+        class_weights[label] /= class_totals[label]
+
+    return class_weights, l0/total, cosine/total
     
-    return class_labels, l0/total
 
 def decompose_image(image, splicemodel=None, device="cpu"):
     """decompose_image _summary_
@@ -335,9 +353,13 @@ def decompose_image(image, splicemodel=None, device="cpu"):
         Torch device.
     """
     if splicemodel is None:
-        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.15, return_weights=True,device=device)
+        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.15, return_weights=True, device=device)
     splicemodel.eval()
 
-    weights = splicemodel.encode_image(image.to(device))
+    splicemodel.return_weights = True
+    splicemodel.return_cosine = True
 
-    return weights
+    (weights, cosine) = splicemodel.encode_image(image.to(device))
+    l0_norm = torch.linalg.vector_norm(weights.squeeze(), ord=0).item()
+
+    return weights, l0_norm, cosine.item()

@@ -27,7 +27,7 @@ class SPLICE(nn.Module):
     device : str, optional
         Torch device, "cuda", "cpu", etc. by default "cpu"
     """
-    def __init__(self, image_mean, dictionary, clip=None, solver='skl', l1_penalty=0.01, return_weights=False, decomp_text=False, text_mean=None, device="cpu"):
+    def __init__(self, image_mean, dictionary, clip=None, solver='skl', l1_penalty=0.01, return_weights=False, return_cosine=False, decomp_text=False, text_mean=None, device="cpu"):
         super().__init__()
         self.device = device
         self.clip = clip.to(self.device) if clip else None
@@ -36,6 +36,7 @@ class SPLICE(nn.Module):
         self.dictionary = dictionary.to(self.device)
         self.l1_penalty = l1_penalty
         self.return_weights = return_weights
+        self.return_cosine = return_cosine
         self.decomp_text = decomp_text
 
         if solver not in ['skl', 'admm']:
@@ -110,7 +111,7 @@ class SPLICE(nn.Module):
         return recon_image
 
     def forward(self, image, text):
-        """forward Forward pass through both image and text encoders.
+        """forward pass through both image and text encoders.
 
         Parameters
         ----------
@@ -149,10 +150,17 @@ class SPLICE(nn.Module):
         centered_image = torch.nn.functional.normalize(image-self.image_mean, dim=1)
 
         weights = self.decompose(centered_image)
-        if self.return_weights:
+
+        if self.return_weights and not self.return_cosine:
             return weights
 
         recon_image = self.recompose_image(weights)
+
+        if self.return_weights and self.return_cosine:
+            return (weights, torch.diag(recon_image @ image.T).sum())
+        
+        if self.return_cosine:
+            return (recon_image, torch.diag(recon_image @ image.T).sum())
         
         return recon_image
     
