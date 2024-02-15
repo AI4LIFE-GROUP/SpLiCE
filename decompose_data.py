@@ -34,7 +34,7 @@ def main():
         weights, l0_norm, cosine = splice.decompose_dataset(dataloader, splicemodel, args.device)
     else:
         if args.verbose:
-            print("Decomposing class " + str(args.class_label) + "from " + str(args.dataset) +"...")
+            print("Decomposing class " + str(args.class_label) + " from " + str(args.dataset) +"...")
         class_weights, l0_norm, cosine = splice.decompose_classes(dataloader, args.class_label, splicemodel, args.device)
         weights = class_weights[args.class_label]
 

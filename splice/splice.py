@@ -3,7 +3,7 @@ from .model import SPLICE
 import os
 import urllib
 
-GITHUB_HOST_LINK = "https://github.com/AI4LIFE-GROUP/SpLiCE"
+GITHUB_HOST_LINK = "https://raw.githubusercontent.com/AI4LIFE-GROUP/SpLiCE/main/data/"
 
 SUPPORTED_MODELS = {
     "clip": [

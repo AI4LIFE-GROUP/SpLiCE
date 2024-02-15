@@ -4,6 +4,19 @@
 Codebase for the paper 
 ["Interpreting CLIP with Sparse Linear Concept Embeddings (SpLiCE)" by U. Bhalla*, A. Oesterling*, S. Srinivas, F. P. Calmon^, H. Lakkaraju^]().
 
+## Table of Contents
+ * [Approach](#approach)
+ * [Installation](#installation)
+ * [Examples](#examples)
+     * [Sample Concept Decomposition](#sample-concept-decomposition)
+     * [Class/Dataset Concept Histogram](#classdataset-concept-histogram)
+     * [Class/Dataset Concept Decomposition](#classdataset-concept-decomposition)
+ * [API](#api)
+ * [API Examples](#api-examples)
+     * [Loading a SpLiCE model](#loading-a-splice-model)
+     * [Decomposing and recomposition an image](#decomposing-and-recomposing-an-image)
+     * [Mapping sparse weights to text vocabulary](#mapping-sparse-weights-to-text-vocabulary)
+     * [Implementing your own VLM backbone or vocabulary](#implementing-your-own-vlm-backbone-or-vocabulary)
 ## Approach 
 SpLiCE decomposes dense CLIP embeddings into **sparse, nonnegative combinations of human-interpretable, semantic concepts** that can be used for post-hoc concept based explanations, concept bottleneck models, dataset bias and spurious correlation detection, and distribution shift monitoring. 
 ![SpLiCE](splice.png)
@@ -132,19 +145,19 @@ To integrate SpLiCE in your own codebase, the `splice` module has the following 
 A SpLiCE model has the following functions:
 1. `encode_image(image)`:
 
-    Returns the concept decomposition of the preprocessed input image if `return_weights` is set to `True`, otherwise it returns the interpretable dense SpLiCE embedding (z_hat) that can be used as a replacement for the original dense CLIP embeddings (z). 
+    Returns the concept decomposition of the preprocessed input image batch if `return_weights` is set to `True`, otherwise it returns the interpretable dense SpLiCE embedding (z_hat) that can be used as a replacement for the original dense CLIP embeddings (z). 
 
 2. `decompose(dense_embedding) -> sparse_embedding`:
 
-    Takes in a dense CLIP embedding and outputs the sparse weight vector representation of the semantic decomposition.
+    Takes in batch of dense CLIP embeddings and outputs the sparse weight vector representations of the semantic decompositions.
 
 3. `recompose_image(weights) -> dense_embedding`:
 
-    Takes in the sparse decomposition of an embedding and outputs a dense reconstruction. 
+    Takes in a batch of sparse decompositions of embeddings and outputs dense reconstructions. 
 
 4. `intervene_image(image, intervention_indices) -> dense embedding`
 
-    Decomposes the preprocessed input image and suppresses any weights on concepts specified by the intervention_indices. Returns the recomposed dense embedding after intervention. 
+    Decomposes the preprocessed input image batch and suppresses any weights on concepts specified by the intervention_indices. Returns the recomposed dense embeddings after intervention. 
 
 5. `forward(image, text)`
 
