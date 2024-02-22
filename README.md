@@ -2,7 +2,7 @@
 ### Sparse Linear Concept Embeddings
 ---
 Codebase for the paper 
-["Interpreting CLIP with Sparse Linear Concept Embeddings (SpLiCE)" by U. Bhalla*, A. Oesterling*, S. Srinivas, F. P. Calmon^, H. Lakkaraju^]().
+["Interpreting CLIP with Sparse Linear Concept Embeddings (SpLiCE)" by U. Bhalla*, A. Oesterling*, S. Srinivas, F. P. Calmon^, H. Lakkaraju^](https://arxiv.org/abs/2402.10376).
 
 ## Table of Contents
  * [Approach](#approach)
