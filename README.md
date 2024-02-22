@@ -184,7 +184,7 @@ import splice
 splicemodel = splice.load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.25, return_weights=True, device="cuda")
 preprocess = splice.get_preprocess("open_clip:ViT-B-32")
 
-image = preprocess(Image.open(00000308175.jpg)).unsqueeze(0)
+image = preprocess(Image.open("00000308175.jpg")).unsqueeze(0)
 
 sparse_weights = splicemodel.encode_image(image)         # shape = [1, 10000], l0 norm = 9
 reconstruction = splicemodel.recompose(sparse_weights)   # shape = [1, 512]
@@ -200,7 +200,7 @@ splicemodel = splice.load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_s
 preprocess = splice.get_preprocess("open_clip:ViT-B-32")
 vocabulary = splice.get_vocabulary("laion", 10000) 
 
-image = preprocess(Image.open(00000308175.jpg)).unsqueeze(0)
+image = preprocess(Image.open("00000308175.jpg")).unsqueeze(0)
 
 sparse_weights = splicemodel.encode_image(image)         # shape = [1, 10000], l0 norm = 9
 reconstruction = splicemodel.recompose(sparse_weights)   # shape = [1, 512]  
@@ -228,5 +228,5 @@ with open(vocab_path, "r") as f:
 concepts = torch.nn.functional.normalize(torch.stack(concepts), dim=1)
 concepts = torch.nn.functional.normalize(concepts-torch.mean(concepts, dim=0), dim=1)
 
-splicemodel = SPLICE(image_mean, concepts, clip=vlm_backbone, device="cuda")
+splicemodel = splice.SPLICE(image_mean, concepts, clip=vlm_backbone, device="cuda")
 ```
