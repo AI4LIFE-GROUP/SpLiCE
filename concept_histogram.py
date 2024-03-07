@@ -16,7 +16,7 @@ def main():
     parser.add_argument('--verbose', action="store_true")
     parser.add_argument('-l1_penalty', type=float, default=0.2)
     parser.add_argument('-class_label', type=int)
-    parser.add_argument('-device', type=str, default="cpu")
+    parser.add_argument('-device', type=str, default="cuda")
     parser.add_argument('-model', type=str, default="open_clip:ViT-B-32")
     parser.add_argument('-vocab', type=str, default="laion")
     parser.add_argument('-batch_size', type=int, default=512)

@@ -10,7 +10,7 @@ def main():
     parser.add_argument('-out_path', type=str)
     parser.add_argument('--verbose', action="store_true")
     parser.add_argument('-l1_penalty', type=float)
-    parser.add_argument('-device', type=str, default="cpu")
+    parser.add_argument('-device', type=str, default="cuda")
     parser.add_argument('-model', type=str, default="open_clip:ViT-B-32")
     parser.add_argument('-vocab', type=str, default="laion")
     parser.add_argument('-dataset', type=str, required=True)

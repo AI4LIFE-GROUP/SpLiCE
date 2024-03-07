@@ -46,6 +46,10 @@ def _download(url: str, root: str, subfolder: str):
     os.makedirs(root_subfolder, exist_ok=True)
     filename = os.path.basename(url)
     download_target = os.path.join(root_subfolder, filename)
+
+    if os.path.isfile(download_target):
+        return download_target
+
     with urllib.request.urlopen(url) as source, open(download_target, "wb") as output:
         while True:
             buffer = source.read(8192)
@@ -95,18 +99,27 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device = "cud
 
         vocab_path = _download(os.path.join(GITHUB_HOST_LINK, "vocab", vocabulary + ".txt"), download_root or os.path.expanduser("~/.cache/splice/"), "vocab")
 
-        with open(vocab_path, "r") as f:
-            lines = f.readlines()[-vocabulary_size:]
-            for line in lines:
-                line = line.strip().split(", ")[0]
-                vocab.append(line)
-                tokens = tokenizer(line).to(device)
-                with torch.no_grad():
-                    concept_embedding = clip_backbone.encode_text(tokens)
-                concepts.append(concept_embedding)
-        
-        concepts = torch.nn.functional.normalize(torch.stack(concepts).squeeze(), dim=1)
-        concepts = torch.nn.functional.normalize(concepts-torch.mean(concepts, dim=0), dim=1)
+        concept_root = download_root or os.path.expanduser("~/.cache/splice/")
+        os.makedirs(os.path.join(concept_root, "vocab"), exist_ok=True)
+        concept_path = os.path.join(concept_root, f"vocab/{vocabulary}_embeddings.pt")
+
+        if os.path.isfile(concept_path):
+            concepts = torch.load(concept_path)
+        else:
+            with open(vocab_path, "r") as f:
+                lines = f.readlines()[-vocabulary_size:]
+                for line in lines:
+                    line = line.strip().split(", ")[0]
+                    vocab.append(line)
+                    tokens = tokenizer(line).to(device)
+                    with torch.no_grad():
+                        concept_embedding = clip_backbone.encode_text(tokens)
+                    concepts.append(concept_embedding)
+            
+            concepts = torch.nn.functional.normalize(torch.stack(concepts).squeeze(), dim=1)
+            concepts = torch.nn.functional.normalize(concepts-torch.mean(concepts, dim=0), dim=1)
+            torch.save(concepts, concept_path)
+
     else:
         raise RuntimeError(f"Vocabulary {vocabulary} not supported.")
     
