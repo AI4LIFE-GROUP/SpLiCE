@@ -100,8 +100,8 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device = "cud
         vocab_path = _download(os.path.join(GITHUB_HOST_LINK, "vocab", vocabulary + ".txt"), download_root or os.path.expanduser("~/.cache/splice/"), "vocab")
 
         concept_root = download_root or os.path.expanduser("~/.cache/splice/")
-        os.makedirs(os.path.join(concept_root, "vocab"), exist_ok=True)
-        concept_path = os.path.join(concept_root, f"vocab/{vocabulary}_embeddings.pt")
+        os.makedirs(os.path.join(concept_root, "embeddings"), exist_ok=True)
+        concept_path = os.path.join(concept_root, f"embeddings/{name}_{vocabulary}_{vocabulary_size}_embeddings.pt")
 
         if os.path.isfile(concept_path):
             concepts = torch.load(concept_path)
