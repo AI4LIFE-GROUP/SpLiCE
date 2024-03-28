@@ -52,7 +52,7 @@ def find_closest(embedding, label_embeddings):
     return torch.argmax(dot_product, dim=-1)
 
 def compute_zero_shot(clipmodel, tokenizer, preprocess):
-    dataset_test = CIFAR100("/n/holylabs/LABS/hlakkaraju_lab/Lab/datasets/", download=True, train=False, transform=preprocess)
+    dataset_test = CIFAR100("/datasets/", download=True, train=False, transform=preprocess)
 
     test_dataloader = DataLoader(dataset_test, batch_size=1024, shuffle=False)
 
