@@ -184,10 +184,10 @@ import splice
 splicemodel = splice.load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.25, return_weights=True, device="cuda")
 preprocess = splice.get_preprocess("open_clip:ViT-B-32")
 
-image = preprocess(Image.open("00000308175.jpg")).unsqueeze(0)
+image = preprocess(Image.open("00000308175.jpg")).unsqueeze(0).to("cuda")
 
 sparse_weights = splicemodel.encode_image(image)         # shape = [1, 10000], l0 norm = 9
-reconstruction = splicemodel.recompose(sparse_weights)   # shape = [1, 512]
+reconstruction = splicemodel.recompose_image(sparse_weights)   # shape = [1, 512]
 ```
 
 ### Mapping sparse weights to text vocabulary
@@ -200,10 +200,10 @@ splicemodel = splice.load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_s
 preprocess = splice.get_preprocess("open_clip:ViT-B-32")
 vocabulary = splice.get_vocabulary("laion", 10000) 
 
-image = preprocess(Image.open("00000308175.jpg")).unsqueeze(0)
+image = preprocess(Image.open("00000308175.jpg")).unsqueeze(0).to("cuda")
 
 sparse_weights = splicemodel.encode_image(image)         # shape = [1, 10000], l0 norm = 9
-reconstruction = splicemodel.recompose(sparse_weights)   # shape = [1, 512]  
+reconstruction = splicemodel.recompose_image(sparse_weights)   # shape = [1, 512]  
 
 for weight_idx in torch.sort(sparse_weights, descending=True)[1]:
     print(f"{vocabulary[weight_idx]}: {sparse_weights[weight_idx]}")
