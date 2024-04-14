@@ -205,6 +205,8 @@ image = preprocess(Image.open("00000308175.jpg")).unsqueeze(0).to("cuda")
 sparse_weights = splicemodel.encode_image(image)         # shape = [1, 10000], l0 norm = 9
 reconstruction = splicemodel.recompose_image(sparse_weights)   # shape = [1, 512]  
 
+sparse_weights = sparse_weights.squeeze()
+
 for weight_idx in torch.sort(sparse_weights, descending=True)[1]:
     print(f"{vocabulary[weight_idx]}: {sparse_weights[weight_idx]}")
 ```
