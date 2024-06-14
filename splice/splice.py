@@ -18,6 +18,7 @@ SUPPORTED_MODELS = {
 
 SUPPORTED_VOCAB = [
     "laion",
+    "laion_bigrams",
     "mscoco"
 ]
 
@@ -58,7 +59,7 @@ def _download(url: str, root: str, subfolder: str):
             output.write(buffer)
     return download_target
 
-def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device = "cuda" if torch.cuda.is_available() else "cpu", download_root = None, **kwargs):
+def load(name: str, vocabulary: str, vocabulary_size: int = -1, device = "cuda" if torch.cuda.is_available() else "cpu", download_root = None, **kwargs):
     """load SpLiCE
 
     Parameters
@@ -101,15 +102,22 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device = "cud
 
         concept_root = download_root or os.path.expanduser("~/.cache/splice/")
         os.makedirs(os.path.join(concept_root, "embeddings"), exist_ok=True)
-        concept_path = os.path.join(concept_root, f"embeddings/{name}_{vocabulary}_{vocabulary_size}_embeddings.pt")
+
+        if vocabulary_size <= 0:
+            vocabulary_size_name = "full"
+        else:
+            vocabulary_size_name = vocabulary_size
+        concept_path = os.path.join(concept_root, f"embeddings/{name}_{vocabulary}_{vocabulary_size_name}_embeddings.pt")
 
         if os.path.isfile(concept_path):
             concepts = torch.load(concept_path)
         else:
             with open(vocab_path, "r") as f:
-                lines = f.readlines()[-vocabulary_size:]
+                lines = f.readlines()
+                if vocabulary_size > 0:
+                    lines = lines[-vocabulary_size:]
                 for line in lines:
-                    line = line.strip().split(", ")[0]
+                    line = line.strip()
                     vocab.append(line)
                     tokens = tokenizer(line).to(device)
                     with torch.no_grad():
@@ -119,7 +127,6 @@ def load(name: str, vocabulary: str, vocabulary_size: int = 10000, device = "cud
             concepts = torch.nn.functional.normalize(torch.stack(concepts).squeeze(), dim=1)
             concepts = torch.nn.functional.normalize(concepts-torch.mean(concepts, dim=0), dim=1)
             torch.save(concepts, concept_path)
-
     else:
         raise RuntimeError(f"Vocabulary {vocabulary} not supported.")
     
@@ -160,8 +167,11 @@ def get_vocabulary(name: str, vocabulary_size: int, download_root = None):
 
         vocab = []
         with open(vocab_path, "r") as f:
-            lines = f.readlines()[-vocabulary_size:]
-            vocab += [line.strip().split(", ")[0] for line in lines]
+            lines = f.readlines()
+            if vocabulary_size > 0:
+                lines = lines[-vocabulary_size:]
+            for line in lines:
+                vocab.append(line.strip())
         return vocab
     else:
         raise RuntimeError(f"Vocabulary {name} not supported.")
@@ -247,7 +257,7 @@ def decompose_dataset(dataloader, splicemodel=None, device="cpu"):
         A vector of the mean value of sparse weights over the dataset.
     """
     if splicemodel is None:
-        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.15, return_weights=True,device=device)
+        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=-1, l1_penalty=0.15, return_weights=True,device=device)
     splicemodel.eval()
 
     splicemodel.return_weights = True
@@ -300,7 +310,7 @@ def decompose_classes(dataloader, target_label, splicemodel=None, device="cpu"):
         A dictionary of elements {label : mean sparse weight vector}
     """
     if splicemodel is None:
-        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.15, return_weights=True, return_cosine=True, device=device)
+        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=-1, l1_penalty=0.15, return_weights=True, return_cosine=True, device=device)
     splicemodel.eval()
 
     class_weights={}
@@ -366,7 +376,7 @@ def decompose_image(image, splicemodel=None, device="cpu"):
         Torch device.
     """
     if splicemodel is None:
-        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=10000, l1_penalty=0.15, return_weights=True, device=device)
+        splicemodel = load("open_clip:ViT-B-32", vocabulary="laion", vocabulary_size=-1, l1_penalty=0.15, return_weights=True, device=device)
     splicemodel.eval()
 
     splicemodel.return_weights = True
