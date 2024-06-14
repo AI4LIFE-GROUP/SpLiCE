@@ -9,7 +9,7 @@ Codebase for the paper
  * [Installation](#installation)
  * [Examples](#examples)
      * [Sample Concept Decomposition](#sample-concept-decomposition)
-     * [Class/Dataset Concept Histogram](#classdataset-concept-histogram)
+     * [Class/Dataset Concept Distributions](#classdataset-concept-distributions)
      * [Class/Dataset Concept Decomposition](#classdataset-concept-decomposition)
  * [API](#api)
  * [API Examples](#api-examples)
@@ -58,14 +58,14 @@ Decomposition L0 Norm:      9.0
 CLIP, SpLiCE Cosine Sim:    0.5363
 ```
 
-### Class/Dataset Concept Histogram
-To generate a concept histogram for a given class, run the script `concept_histogram.py`, which generates a bar plot of the concepts given by `decompose_data.py`. The number of concepts to be plotted can be controlled with the `-plot_topk` argument. An example histogram of the top 10 concepts from the 'jack-o-lantern' class from ImageNetVal is given below.
+### Class/Dataset Concept Distributions
+To generate a concept distribution for a given class, run the script `concept_distribution.py`, which generates a bar plot of the concepts given by `decompose_data.py`. The number of concepts to be plotted can be controlled with the `-plot_topk` argument. An example distribution of the top 10 concepts from the 'jack-o-lantern' class from ImageNetVal is given below.
 
 
 ```bash
-python concept_histogram.py -dataset ImageNetVal -out_folder imagenet_jackolantern_decomp --verbose -l1_penalty 0.3 -class_label 607 -device "cuda"
+python concept_distribution.py -dataset ImageNetVal -out_folder imagenet_jackolantern_decomp --verbose -l1_penalty 0.3 -class_label 607 -device "cuda"
 ```
-![jackolantern_concect_histogram](imagenetval_class_607_decomposition.jpg)
+![jackolantern_concept_distribution](imagenetval_class_607_decomposition.jpg)
 
 
 ### Class/Dataset Concept Decomposition
@@ -140,6 +140,23 @@ To integrate SpLiCE in your own codebase, the `splice` module has the following 
 4.  `splice.decompose_dataset(dataloader, splicemodel, device) -> weights Tensor, l0_norm float, cosine_sim float`:
 
     Returns the splicemodel's average sparse concept decomposition of all images in the dataloader. Also returns the additional metrics of the average l0 norm of the decompositions and the aveerage cosine similarity between the splice embeddings and the original dense clip embeddings. 
+
+Currently, SpLiCE supports the following models,
+
+| Library   | Model    |
+|-----------|----------|
+| clip      | ViT-B/32 |
+| clip      | ViT-B/16 |
+| clip      | RN50     |
+| open_clip | ViT-B-32 |
+
+and the following vocabularies:
+
+| Vocabulary    | Description                                                                                                                                       |
+|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------|
+| laion         | ~33000 of the most frequent tokens present in the LAION-400m dataset. We recommend you use the top 10000 (vocab_size=10000) for the best results. |
+| mscoco        | ~12000 of the most frequent tokens present in the MSCOCO dataset.                                                                                 |
+| laion_bigrams | 10000 of the most frequent tokens present in the LAION-400m dataset and 5000 of the most frequent bigrams present in the LAION-400m dataset.      |
 
 
 A SpLiCE model has the following functions:
