@@ -3,7 +3,7 @@ import torch
 import splice
 from PIL import Image
 from torch.utils.data import DataLoader
-import datasets
+import experiments.datasets as datasets
 
 def main():
     parser = argparse.ArgumentParser()
@@ -13,20 +13,19 @@ def main():
     parser.add_argument('-device', type=str, default="cuda")
     parser.add_argument('-model', type=str, default="open_clip:ViT-B-32")
     parser.add_argument('-vocab', type=str, default="laion")
+    parser.add_argument('-vocab_size', type=int, default=10000)
     parser.add_argument('-dataset', type=str, required=True)
     parser.add_argument('-data_path', type=str)
     parser.add_argument('-class_label', type=int)
     parser.add_argument('-batch_size', type=int, default=512)
-
     args = parser.parse_args()
-
 
     preprocess = splice.get_preprocess(args.model)
 
     dataset = datasets.load(args.dataset, preprocess, args.data_path)
     dataloader = DataLoader(dataset, batch_size=args.batch_size, shuffle=True)
 
-    splicemodel = splice.load(args.model, args.vocab, 10000, args.device, l1_penalty=args.l1_penalty, return_weights=True)
+    splicemodel = splice.load(args.model, args.vocab, args.vocab_size, args.device, l1_penalty=args.l1_penalty, return_weights=True)
 
     if args.class_label is None:
         if args.verbose:
@@ -35,10 +34,10 @@ def main():
     else:
         if args.verbose:
             print("Decomposing class " + str(args.class_label) + " from " + str(args.dataset) +"...")
-        class_weights, l0_norm, cosine = splice.decompose_classes(dataloader, args.class_label, splicemodel, args.device)
+        class_weights, class_totals, l0_norm, cosine = splice.decompose_classes(dataloader, args.class_label, splicemodel, args.device)
         weights = class_weights[args.class_label]
 
-    vocab = splice.get_vocabulary(args.vocab, 10000)
+    vocab = splice.get_vocabulary(args.vocab, args.vocab_size)
 
     _, indices = torch.sort(weights, descending=True)
 
