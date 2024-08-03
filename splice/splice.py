@@ -110,7 +110,7 @@ def load(name: str, vocabulary: str, vocabulary_size: int = -1, device = "cuda" 
         concept_path = os.path.join(concept_root, f"embeddings/{name}_{vocabulary}_{vocabulary_size_name}_embeddings.pt")
 
         if os.path.isfile(concept_path):
-            concepts = torch.load(concept_path)
+            concepts = torch.load(concept_path, map_location=torch.device(device))
         else:
             with open(vocab_path, "r") as f:
                 lines = f.readlines()
