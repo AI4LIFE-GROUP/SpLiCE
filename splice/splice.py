@@ -134,7 +134,10 @@ def load(name: str, vocabulary: str, vocabulary_size: int = -1, device = "cuda" 
     model_path = model_name.replace("/","-")
     mean_path = _download(os.path.join(GITHUB_HOST_LINK, "means", f"{library}_{model_path}_image.pt"), download_root or os.path.expanduser("~/.cache/splice/"), "means")
     image_mean = torch.load(mean_path, map_location=torch.device(device))
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
     splice = SPLICE(
         image_mean=image_mean,
         dictionary=concepts,

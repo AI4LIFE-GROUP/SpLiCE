@@ -2,6 +2,7 @@ import argparse
 import torch
 import splice
 from PIL import Image
+import os
 
 def main():
     parser = argparse.ArgumentParser()
@@ -25,7 +26,9 @@ def main():
 
     _, indices = torch.sort(weights, descending=True)
 
-    with open(args.out_path, "w") as f:
+    outpath = args.out_path + os.path.split(args.path)[-1].split(".")[0] + "_weights.txt"
+
+    with open(outpath, "w") as f:
 
         f.write("Concept Decomposition of " + str(args.path) + ": \n")
         print("Concept Decomposition of " + str(args.path) + ":")
